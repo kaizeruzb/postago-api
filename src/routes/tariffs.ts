@@ -16,16 +16,18 @@ const calculateQuerySchema = z.object({
   transportType: z.enum(["air", "rail", "sea", "combined"]).optional(),
 });
 
-// Public: calculate shipping cost (GET with query params)
-tariffRouter.get(
-  "/calculate",
-  zValidator("query", calculateQuerySchema),
-  async (c) => {
-    const input = c.req.valid("query");
-    const estimates = await calculateCost(input);
-    return c.json({ estimates });
-  },
-);
+// Public: calculate shipping cost
+const calculateHandler = async (c: any) => {
+  const query = c.req.query();
+  const body = c.req.method === "POST" ? await c.req.json().catch(() => ({})) : {};
+  const raw = { ...query, ...body };
+  const input = calculateQuerySchema.parse(raw);
+  const estimates = await calculateCost(input);
+  return c.json({ estimates });
+};
+
+tariffRouter.get("/calculate", calculateHandler);
+tariffRouter.post("/calculate", calculateHandler);
 
 // Public: list active routes
 tariffRouter.get("/routes", async (c) => {
