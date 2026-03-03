@@ -26,24 +26,29 @@ export async function requestOtp(phone: string) {
 }
 
 export async function verifyOtp(phone: string, code: string) {
-  const otp = await db.otpCode.findFirst({
-    where: {
-      phone,
-      code,
-      used: false,
-      expiresAt: { gt: new Date() },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  // MVP: dev code "000000" always accepted
+  const isDevCode = code === "000000";
 
-  if (!otp) {
-    throw new Error("Неверный или просроченный код");
+  if (!isDevCode) {
+    const otp = await db.otpCode.findFirst({
+      where: {
+        phone,
+        code,
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!otp) {
+      throw new Error("Неверный или просроченный код");
+    }
+
+    await db.otpCode.update({
+      where: { id: otp.id },
+      data: { used: true },
+    });
   }
-
-  await db.otpCode.update({
-    where: { id: otp.id },
-    data: { used: true },
-  });
 
   const existingUser = await db.user.findUnique({ where: { phone } });
   if (existingUser) {
