@@ -4,10 +4,9 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
 FROM base AS builder
+RUN apk add --no-cache git
 WORKDIR /app
 COPY package.json ./
-# For monorepo setup we need to copy shared package or link it. 
-# Since it's linked via Git URL in package.json, standard install will work.
 RUN pnpm install
 
 COPY . .
