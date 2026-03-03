@@ -10,8 +10,7 @@ datasource db {
 
 enum UserRole {
   client
-  operator_origin
-  operator_destination
+  operator
   courier
   admin
 }

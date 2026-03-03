@@ -63,7 +63,7 @@ parcelRouter.get("/track/:code", async (c) => {
 parcelRouter.get(
   "/warehouse/all",
   requireAuth,
-  requireRole("operator_origin", "operator_destination", "courier", "admin"),
+  requireRole("operator", "courier", "admin"),
   async (c) => {
     const status = c.req.query("status") as ParcelStatus | undefined;
     const parcels = await db.parcel.findMany({
@@ -102,7 +102,7 @@ parcelRouter.get("/:id", requireAuth, async (c) => {
 parcelRouter.patch(
   "/:id/weight",
   requireAuth,
-  requireRole("operator_origin", "admin"),
+  requireRole("operator", "admin"),
   zValidator("json", updateParcelWeightSchema),
   async (c) => {
     const id = c.req.param("id");
@@ -149,7 +149,7 @@ parcelRouter.patch(
 parcelRouter.patch(
   "/:id/status",
   requireAuth,
-  requireRole("operator_origin", "operator_destination", "courier", "admin"),
+  requireRole("operator", "courier", "admin"),
   zValidator("json", updateParcelStatusSchema),
   async (c) => {
     const id = c.req.param("id");

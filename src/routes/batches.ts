@@ -12,7 +12,7 @@ export const batchRouter = new Hono();
 batchRouter.post(
   "/",
   requireAuth,
-  requireRole("operator_origin", "admin"),
+  requireRole("operator", "admin"),
   zValidator("json", createBatchSchema),
   async (c) => {
     const { routeId, parcelIds } = c.req.valid("json");
@@ -26,7 +26,7 @@ batchRouter.post(
 batchRouter.get(
   "/",
   requireAuth,
-  requireRole("operator_origin", "operator_destination", "admin"),
+  requireRole("operator", "admin"),
   async (c) => {
     const status = c.req.query("status") as BatchStatus | undefined;
     const batches = await db.batch.findMany({
@@ -46,7 +46,7 @@ batchRouter.get(
 batchRouter.get(
   "/:id",
   requireAuth,
-  requireRole("operator_origin", "operator_destination", "admin"),
+  requireRole("operator", "admin"),
   async (c) => {
     const id = c.req.param("id");
     const batch = await db.batch.findUnique({
@@ -74,7 +74,7 @@ batchRouter.get(
 batchRouter.post(
   "/:id/ship",
   requireAuth,
-  requireRole("operator_origin", "admin"),
+  requireRole("operator", "admin"),
   zValidator("json", shipBatchSchema),
   async (c) => {
     const id = c.req.param("id");
@@ -89,7 +89,7 @@ batchRouter.post(
 batchRouter.post(
   "/:id/receive",
   requireAuth,
-  requireRole("operator_destination", "admin"),
+  requireRole("operator", "admin"),
   async (c) => {
     const id = c.req.param("id");
     const operatorId = c.get("user").sub;
