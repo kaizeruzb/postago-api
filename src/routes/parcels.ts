@@ -63,7 +63,7 @@ parcelRouter.get("/track/:code", async (c) => {
 parcelRouter.get(
   "/warehouse/all",
   requireAuth,
-  requireRole("operator_origin", "operator_destination", "admin"),
+  requireRole("operator_origin", "operator_destination", "courier", "admin"),
   async (c) => {
     const status = c.req.query("status") as ParcelStatus | undefined;
     const parcels = await db.parcel.findMany({
