@@ -1,4 +1,5 @@
 import { db } from "../lib/db";
+import { notifyParcelStatusChange } from "./notification";
 
 export async function createBatch(
   routeId: string,
@@ -31,6 +32,9 @@ export async function createBatch(
     })),
   });
 
+  // Notify all clients in background
+  Promise.allSettled(parcelIds.map(id => notifyParcelStatusChange(id, "in_batch"))).catch(console.error);
+
   return batch;
 }
 
@@ -61,6 +65,9 @@ export async function shipBatch(
     })),
   });
 
+  // Notify all clients in background
+  Promise.allSettled(parcelIds.map(id => notifyParcelStatusChange(id, "shipped"))).catch(console.error);
+
   return batch;
 }
 
@@ -86,6 +93,9 @@ export async function receiveBatch(batchId: string, operatorId: string) {
       note: `Партия ${batchId} принята на складе`,
     })),
   });
+
+  // Notify all clients in background
+  Promise.allSettled(parcelIds.map(id => notifyParcelStatusChange(id, "received_at_destination"))).catch(console.error);
 
   return batch;
 }

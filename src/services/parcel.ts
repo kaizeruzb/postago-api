@@ -1,6 +1,7 @@
 import { db } from "../lib/db";
 import type { ParcelStatus } from "@prisma/client";
 import type { CreateParcelInput } from "@postago/shared";
+import { notifyParcelStatusChange } from "./notification";
 
 function generateTrackingCode(originCountry: string): string {
   const num = Math.floor(Math.random() * 999999)
@@ -48,6 +49,9 @@ export async function createParcel(userId: string, input: CreateParcelInput) {
     },
   });
 
+  // Notify client about new parcel
+  notifyParcelStatusChange(parcel.id, "created").catch(console.error);
+
   return parcel;
 }
 
@@ -66,6 +70,9 @@ export async function updateParcelStatus(
   await db.parcelEvent.create({
     data: { parcelId, status, operatorId, location, note },
   });
+
+  // Notify client about status change
+  notifyParcelStatusChange(parcel.id, status).catch(console.error);
 
   return parcel;
 }

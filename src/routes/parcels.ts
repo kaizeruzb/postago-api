@@ -9,6 +9,7 @@ import {
 import { createParcel, updateParcelStatus } from "../services/parcel";
 import { requireAuth, requireRole } from "../middleware/auth";
 import { db } from "../lib/db";
+import { notifyParcelStatusChange } from "../services/notification";
 
 export const parcelRouter = new Hono();
 
@@ -136,6 +137,9 @@ parcelRouter.patch(
         note: `Вес: ${data.weightKg} кг. Стоимость: $${finalCost.toFixed(2)}`,
       },
     });
+
+    // Notify client about weighing
+    notifyParcelStatusChange(id, "weighed").catch(console.error);
 
     return c.json(updated);
   },
