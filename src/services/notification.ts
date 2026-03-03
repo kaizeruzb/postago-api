@@ -1,5 +1,6 @@
 import { db } from "../lib/db";
 import { sendSms } from "./sms";
+import { sendTelegramMessage } from "../lib/telegram";
 
 const STATUS_MESSAGES: Record<string, string> = {
   created: "Заказ создан. Ожидаем поступления на склад.",
@@ -50,17 +51,20 @@ ${statusMessage}`;
 
   // 2. Send Telegram (if linked)
   if (parcel.user.telegramId) {
-    // Stub for real Telegram bot integration
-    console.log(`[TELEGRAM] To: ${parcel.user.telegramId} | Message: ${message}`);
-    
-    await db.notification.create({
-      data: {
-        userId: parcel.userId,
-        channel: "telegram",
-        message,
-        status: "sent",
-        sentAt: new Date(),
-      },
-    });
+    try {
+      const sent = await sendTelegramMessage(parcel.user.telegramId, message);
+
+      await db.notification.create({
+        data: {
+          userId: parcel.userId,
+          channel: "telegram",
+          message,
+          status: sent ? "sent" : "failed",
+          sentAt: new Date(),
+        },
+      });
+    } catch (error) {
+      console.error(`Failed to send Telegram to ${parcel.user.telegramId}:`, error);
+    }
   }
 }
