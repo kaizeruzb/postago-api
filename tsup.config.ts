@@ -5,6 +5,6 @@ export default defineConfig({
   format: ["esm"],
   splitting: false,
   external: ["@prisma/client"],
-  noExternal: ["shared"],
+  noExternal: ["@postago/shared"],
   clean: true,
 });
