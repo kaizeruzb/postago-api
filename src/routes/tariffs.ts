@@ -1,18 +1,27 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { calculateCostSchema, createRouteSchema, updateRouteSchema } from "@postago/shared";
+import { z } from "zod";
+import { createRouteSchema, updateRouteSchema } from "@postago/shared";
 import { calculateCost } from "../services/tariff";
 import { requireAuth, requireRole } from "../middleware/auth";
 import { db } from "../lib/db";
 
 export const tariffRouter = new Hono();
 
-// Public: calculate shipping cost
-tariffRouter.post(
+// Query params version: strings → numbers via coerce
+const calculateQuerySchema = z.object({
+  originCountry: z.string().length(2),
+  destinationCountry: z.string().length(2),
+  weightKg: z.coerce.number().positive().max(1000),
+  transportType: z.enum(["air", "rail", "sea", "combined"]).optional(),
+});
+
+// Public: calculate shipping cost (GET with query params)
+tariffRouter.get(
   "/calculate",
-  zValidator("json", calculateCostSchema),
+  zValidator("query", calculateQuerySchema),
   async (c) => {
-    const input = c.req.valid("json");
+    const input = c.req.valid("query");
     const estimates = await calculateCost(input);
     return c.json({ estimates });
   },
