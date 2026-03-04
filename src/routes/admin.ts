@@ -25,6 +25,8 @@ adminRouter.get("/users", async (c) => {
         city: true,
         clientCode: true,
         createdAt: true,
+        warehouseId: true,
+        warehouse: { select: { id: true, country: true, city: true, type: true } },
         _count: { select: { parcels: true } },
       },
       skip: (page - 1) * limit,
@@ -45,6 +47,22 @@ adminRouter.patch("/users/:id/role", async (c) => {
     where: { id },
     data: { role },
     select: { id: true, phone: true, name: true, role: true },
+  });
+  return c.json(user);
+});
+
+// Assign operator to warehouse
+adminRouter.patch("/users/:id/warehouse", async (c) => {
+  const id = c.req.param("id");
+  const { warehouseId } = await c.req.json() as { warehouseId: string | null };
+
+  const user = await db.user.update({
+    where: { id },
+    data: { warehouseId },
+    select: {
+      id: true, phone: true, name: true, role: true, warehouseId: true,
+      warehouse: { select: { id: true, country: true, city: true, type: true } },
+    },
   });
   return c.json(user);
 });
