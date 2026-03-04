@@ -69,13 +69,42 @@ parcelRouter.get(
     const user = c.get("user");
     const status = c.req.query("status") as ParcelStatus | undefined;
 
-    // Operators see: their warehouse parcels + unassigned "created" parcels; admins see all
-    const warehouseFilter = user.role === "admin" ? {} : {
-      OR: [
-        { warehouseId: user.warehouseId },
-        { warehouseId: null, status: "created" as ParcelStatus },
-      ],
-    };
+    // Build warehouse filter based on warehouse type
+    let warehouseFilter: object = {};
+
+    if (user.role !== "admin" && user.warehouseId) {
+      const warehouse = await db.warehouse.findUnique({
+        where: { id: user.warehouseId },
+      });
+
+      const originStatuses: ParcelStatus[] = [
+        "created", "weighed", "paid", "received_at_origin", "in_batch",
+      ];
+      const destinationStatuses: ParcelStatus[] = [
+        "shipped", "in_transit", "customs",
+        "received_at_destination", "sorting", "out_for_delivery", "delivered",
+      ];
+
+      if (warehouse?.type === "origin") {
+        // Origin operator: parcels at their warehouse (early stages) + unassigned created
+        warehouseFilter = {
+          OR: [
+            { warehouseId: user.warehouseId, status: { in: originStatuses } },
+            { warehouseId: null, status: "created" as ParcelStatus },
+          ],
+        };
+      } else if (warehouse?.type === "destination") {
+        // Destination operator: parcels in batches headed to their warehouse
+        warehouseFilter = {
+          batchParcels: {
+            some: {
+              batch: { destinationWarehouseId: user.warehouseId },
+            },
+          },
+          status: { in: destinationStatuses },
+        };
+      }
+    }
 
     const parcels = await db.parcel.findMany({
       where: {
