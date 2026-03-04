@@ -78,7 +78,7 @@ parcelRouter.get(
       });
 
       const originStatuses: ParcelStatus[] = [
-        "created", "weighed", "paid", "received_at_origin", "in_batch",
+        "created", "weighed", "paid", "received_at_origin", "in_batch", "shipped",
       ];
       const destinationStatuses: ParcelStatus[] = [
         "shipped", "in_transit", "customs",
