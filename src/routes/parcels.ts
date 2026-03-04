@@ -68,27 +68,30 @@ parcelRouter.get(
   async (c) => {
     const user = c.get("user");
     const status = c.req.query("status") as ParcelStatus | undefined;
+    const direction = c.req.query("direction") as "outbound" | "inbound" | undefined;
 
     // Operators see parcels related to their warehouse; admins see all
     let warehouseFilter: object = {};
 
     if (user.role !== "admin" && user.warehouseId) {
-      warehouseFilter = {
-        OR: [
-          // Parcels assigned to this warehouse
-          { warehouseId: user.warehouseId },
-          // Unassigned new parcels
-          { warehouseId: null, status: "created" as ParcelStatus },
-          // Incoming: parcels in batches destined for this warehouse
-          {
-            batchParcels: {
-              some: {
-                batch: { destinationWarehouseId: user.warehouseId },
-              },
+      if (direction === "inbound") {
+        // Incoming: parcels in batches destined for this warehouse
+        warehouseFilter = {
+          batchParcels: {
+            some: {
+              batch: { destinationWarehouseId: user.warehouseId },
             },
           },
-        ],
-      };
+        };
+      } else {
+        // Outbound (default): parcels assigned to this warehouse + unassigned created
+        warehouseFilter = {
+          OR: [
+            { warehouseId: user.warehouseId },
+            { warehouseId: null, status: "created" as ParcelStatus },
+          ],
+        };
+      }
     }
 
     const parcels = await db.parcel.findMany({
