@@ -94,14 +94,22 @@ parcelRouter.get(
           ],
         };
       } else if (warehouse?.type === "destination") {
-        // Destination operator: parcels in batches headed to their warehouse
+        // Destination operator: parcels headed to their warehouse
+        // via batch OR via route destination country (fallback for parcels without batch)
         warehouseFilter = {
-          batchParcels: {
-            some: {
-              batch: { destinationWarehouseId: user.warehouseId },
-            },
-          },
           status: { in: destinationStatuses },
+          OR: [
+            {
+              batchParcels: {
+                some: {
+                  batch: { destinationWarehouseId: user.warehouseId },
+                },
+              },
+            },
+            {
+              route: { destinationCountry: warehouse.country },
+            },
+          ],
         };
       }
     }
