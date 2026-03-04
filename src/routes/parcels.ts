@@ -69,49 +69,26 @@ parcelRouter.get(
     const user = c.get("user");
     const status = c.req.query("status") as ParcelStatus | undefined;
 
-    // Build warehouse filter based on warehouse type
+    // Operators see parcels related to their warehouse; admins see all
     let warehouseFilter: object = {};
 
     if (user.role !== "admin" && user.warehouseId) {
-      const warehouse = await db.warehouse.findUnique({
-        where: { id: user.warehouseId },
-      });
-
-      const originStatuses: ParcelStatus[] = [
-        "created", "weighed", "paid", "received_at_origin", "in_batch", "shipped",
-      ];
-      const destinationStatuses: ParcelStatus[] = [
-        "shipped", "in_transit", "customs",
-        "received_at_destination", "sorting", "out_for_delivery", "delivered",
-      ];
-
-      if (warehouse?.type === "origin") {
-        // Origin operator: parcels at their warehouse (early stages) + unassigned created
-        warehouseFilter = {
-          OR: [
-            { warehouseId: user.warehouseId, status: { in: originStatuses } },
-            { warehouseId: null, status: "created" as ParcelStatus },
-          ],
-        };
-      } else if (warehouse?.type === "destination") {
-        // Destination operator: parcels headed to their warehouse
-        // via batch OR via route destination country (fallback for parcels without batch)
-        warehouseFilter = {
-          status: { in: destinationStatuses },
-          OR: [
-            {
-              batchParcels: {
-                some: {
-                  batch: { destinationWarehouseId: user.warehouseId },
-                },
+      warehouseFilter = {
+        OR: [
+          // Parcels assigned to this warehouse
+          { warehouseId: user.warehouseId },
+          // Unassigned new parcels
+          { warehouseId: null, status: "created" as ParcelStatus },
+          // Incoming: parcels in batches destined for this warehouse
+          {
+            batchParcels: {
+              some: {
+                batch: { destinationWarehouseId: user.warehouseId },
               },
             },
-            {
-              route: { destinationCountry: warehouse.country },
-            },
-          ],
-        };
-      }
+          },
+        ],
+      };
     }
 
     const parcels = await db.parcel.findMany({
