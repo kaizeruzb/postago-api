@@ -76,12 +76,24 @@ parcelRouter.get(
     if (user.role !== "admin" && user.warehouseId) {
       if (direction === "inbound") {
         // Incoming: parcels in batches destined for this warehouse
+        // OR parcels whose route destination matches warehouse country (fallback for no-batch)
+        const warehouse = await db.warehouse.findUnique({
+          where: { id: user.warehouseId },
+        });
         warehouseFilter = {
-          batchParcels: {
-            some: {
-              batch: { destinationWarehouseId: user.warehouseId },
+          OR: [
+            {
+              batchParcels: {
+                some: {
+                  batch: { destinationWarehouseId: user.warehouseId },
+                },
+              },
             },
-          },
+            {
+              route: { destinationCountry: warehouse!.country },
+              status: { notIn: ["created", "weighed", "paid"] as ParcelStatus[] },
+            },
+          ],
         };
       } else {
         // Outbound (default): parcels assigned to this warehouse + unassigned created
