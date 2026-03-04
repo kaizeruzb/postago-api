@@ -8,6 +8,7 @@ import { parcelRouter } from "./routes/parcels";
 import { batchRouter } from "./routes/batches";
 import { paymentRouter } from "./routes/payments";
 import { adminRouter } from "./routes/admin";
+import { db } from "./lib/db";
 
 export function createApp(): Hono {
   const app = new Hono();
@@ -33,6 +34,14 @@ export function createApp(): Hono {
   app.route("/api/batches", batchRouter);
   app.route("/api/payments", paymentRouter);
   app.route("/api/admin", adminRouter);
+
+  // Public: list warehouses
+  app.get("/api/warehouses", async (c) => {
+    const warehouses = await db.warehouse.findMany({
+      orderBy: { country: "asc" },
+    });
+    return c.json({ warehouses });
+  });
 
   return app;
 }
