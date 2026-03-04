@@ -5,12 +5,16 @@ export async function createBatch(
   routeId: string,
   operatorId: string,
   parcelIds: string[],
+  originWarehouseId?: string,
+  destinationWarehouseId?: string,
 ) {
   const batch = await db.batch.create({
     data: {
       routeId,
       operatorId,
       totalParcels: parcelIds.length,
+      originWarehouseId: originWarehouseId || undefined,
+      destinationWarehouseId: destinationWarehouseId || undefined,
       batchParcels: {
         create: parcelIds.map((parcelId) => ({ parcelId })),
       },

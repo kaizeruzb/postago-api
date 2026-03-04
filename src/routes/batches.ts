@@ -15,9 +15,9 @@ batchRouter.post(
   requireRole("operator", "admin"),
   zValidator("json", createBatchSchema),
   async (c) => {
-    const { routeId, parcelIds } = c.req.valid("json");
-    const operatorId = c.get("user").sub;
-    const batch = await createBatch(routeId, operatorId, parcelIds);
+    const { routeId, parcelIds, destinationWarehouseId } = c.req.valid("json");
+    const user = c.get("user");
+    const batch = await createBatch(routeId, user.sub, parcelIds, user.warehouseId, destinationWarehouseId);
     return c.json(batch, 201);
   },
 );
@@ -29,12 +29,27 @@ batchRouter.get(
   requireRole("operator", "admin"),
   async (c) => {
     const status = c.req.query("status") as BatchStatus | undefined;
+    const user = c.get("user");
+
+    // Operators see batches for their warehouse (as origin OR destination)
+    const warehouseFilter = user.role === "admin" ? {} : {
+      OR: [
+        { originWarehouseId: user.warehouseId },
+        { destinationWarehouseId: user.warehouseId },
+      ],
+    };
+
     const batches = await db.batch.findMany({
-      where: status ? { status } : {},
+      where: {
+        ...(status ? { status } : {}),
+        ...warehouseFilter,
+      },
       include: {
         route: true,
         operator: { select: { name: true } },
         _count: { select: { batchParcels: true } },
+        originWarehouse: { select: { country: true, city: true } },
+        destinationWarehouse: { select: { country: true, city: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -92,8 +107,17 @@ batchRouter.post(
   requireRole("operator", "admin"),
   async (c) => {
     const id = c.req.param("id");
-    const operatorId = c.get("user").sub;
-    const batch = await receiveBatch(id, operatorId);
-    return c.json(batch);
+    const user = c.get("user");
+
+    // Validate operator's warehouse matches batch destination
+    if (user.role !== "admin") {
+      const batch = await db.batch.findUnique({ where: { id }, select: { destinationWarehouseId: true } });
+      if (batch?.destinationWarehouseId && batch.destinationWarehouseId !== user.warehouseId) {
+        return c.json({ error: "Эта партия предназначена для другого склада" }, 403);
+      }
+    }
+
+    const result = await receiveBatch(id, user.sub);
+    return c.json(result);
   },
 );
