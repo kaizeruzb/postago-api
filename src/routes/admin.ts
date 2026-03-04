@@ -105,7 +105,10 @@ adminRouter.get("/warehouses", async (c) => {
 
 adminRouter.post("/warehouses", async (c) => {
   const data = await c.req.json();
-  const warehouse = await db.warehouse.create({ data });
+  // type defaults to "origin" (field required in DB but no longer used for logic)
+  const warehouse = await db.warehouse.create({
+    data: { ...data, type: data.type || "origin" },
+  });
   return c.json(warehouse, 201);
 });
 
