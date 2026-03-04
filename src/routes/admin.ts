@@ -108,3 +108,16 @@ adminRouter.post("/warehouses", async (c) => {
   const warehouse = await db.warehouse.create({ data });
   return c.json(warehouse, 201);
 });
+
+adminRouter.patch("/warehouses/:id", async (c) => {
+  const id = c.req.param("id");
+  const data = await c.req.json();
+  const warehouse = await db.warehouse.update({ where: { id }, data });
+  return c.json(warehouse);
+});
+
+adminRouter.delete("/warehouses/:id", async (c) => {
+  const id = c.req.param("id");
+  await db.warehouse.delete({ where: { id } });
+  return c.json({ ok: true });
+});
