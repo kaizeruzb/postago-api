@@ -146,12 +146,17 @@ model Parcel {
   weightKg       Decimal?     @map("weight_kg") @db.Decimal(8, 3)
   lengthCm       Int?         @map("length_cm")
   widthCm        Int?         @map("width_cm")
-  heightCm       Int?         @map("height_cm")
-  calculatedCost Decimal?     @map("calculated_cost") @db.Decimal(10, 2)
-  finalCost      Decimal?     @map("final_cost") @db.Decimal(10, 2)
-  warehouseId    String?      @map("warehouse_id") @db.Uuid
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  heightCm         Int?         @map("height_cm")
+  calculatedCost   Decimal?     @map("calculated_cost") @db.Decimal(10, 2)
+  finalCost        Decimal?     @map("final_cost") @db.Decimal(10, 2)
+  recipientName    String?      @map("recipient_name")
+  recipientPhone   String?      @map("recipient_phone")
+  recipientAddress String?      @map("recipient_address")
+  originCity       String?      @map("origin_city")
+  destinationCity  String?      @map("destination_city")
+  warehouseId      String?      @map("warehouse_id") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
   user         User          @relation(fields: [userId], references: [id])
   warehouse    Warehouse?    @relation(fields: [warehouseId], references: [id])

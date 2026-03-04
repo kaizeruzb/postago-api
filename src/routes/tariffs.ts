@@ -38,6 +38,15 @@ tariffRouter.get("/routes", async (c) => {
   return c.json({ routes });
 });
 
+// Public: list warehouses (for city selection in parcel creation)
+tariffRouter.get("/warehouses", async (c) => {
+  const warehouses = await db.warehouse.findMany({
+    select: { id: true, country: true, city: true, address: true },
+    orderBy: [{ country: "asc" }, { city: "asc" }],
+  });
+  return c.json({ warehouses });
+});
+
 // Admin: create route
 tariffRouter.post(
   "/routes",
