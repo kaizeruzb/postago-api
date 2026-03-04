@@ -65,12 +65,20 @@ parcelRouter.get(
   requireAuth,
   requireRole("operator", "courier", "admin"),
   async (c) => {
+    const user = c.get("user");
     const status = c.req.query("status") as ParcelStatus | undefined;
+
+    // Operators see only their warehouse parcels; admins see all
+    const warehouseFilter = user.role === "admin" ? {} : { warehouseId: user.warehouseId };
+
     const parcels = await db.parcel.findMany({
-      where: status ? { status } : {},
+      where: {
+        ...(status ? { status } : {}),
+        ...warehouseFilter,
+      },
       include: {
         route: true,
-        user: { select: { name: true, clientCode: true, phone: true } },
+        user: { select: { name: true, clientCode: true, phone: true, city: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -116,6 +124,7 @@ parcelRouter.patch(
 
     const finalCost = Number(parcel.route.ratePerKg) * data.weightKg;
 
+    const user = c.get("user");
     const updated = await db.parcel.update({
       where: { id },
       data: {
@@ -125,6 +134,7 @@ parcelRouter.patch(
         heightCm: data.heightCm,
         finalCost,
         status: "weighed",
+        warehouseId: user.warehouseId || undefined,
       },
       include: { route: true },
     });
@@ -133,7 +143,7 @@ parcelRouter.patch(
       data: {
         parcelId: id,
         status: "weighed",
-        operatorId: c.get("user").sub,
+        operatorId: user.sub,
         note: `Вес: ${data.weightKg} кг. Стоимость: $${finalCost.toFixed(2)}`,
       },
     });
