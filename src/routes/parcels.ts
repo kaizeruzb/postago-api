@@ -50,6 +50,7 @@ parcelRouter.get("/track/:code", async (c) => {
     where: { trackingCode: code },
     include: {
       route: true,
+      user: { select: { name: true, clientCode: true, phone: true } },
       events: { orderBy: { timestamp: "desc" } },
       photos: true,
     },
