@@ -69,8 +69,13 @@ parcelRouter.get(
     const user = c.get("user");
     const status = c.req.query("status") as ParcelStatus | undefined;
 
-    // Operators see only their warehouse parcels; admins see all
-    const warehouseFilter = user.role === "admin" ? {} : { warehouseId: user.warehouseId };
+    // Operators see: their warehouse parcels + unassigned "created" parcels; admins see all
+    const warehouseFilter = user.role === "admin" ? {} : {
+      OR: [
+        { warehouseId: user.warehouseId },
+        { warehouseId: null, status: "created" as ParcelStatus },
+      ],
+    };
 
     const parcels = await db.parcel.findMany({
       where: {
