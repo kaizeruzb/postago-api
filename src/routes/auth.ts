@@ -38,6 +38,8 @@ authRouter.get("/me", requireAuth, async (c) => {
       clientCode: true,
       telegramId: true,
       createdAt: true,
+      warehouseId: true,
+      warehouse: { select: { id: true, country: true, city: true, type: true } },
     },
   });
   if (!user) return c.json({ error: "Пользователь не найден" }, 404);

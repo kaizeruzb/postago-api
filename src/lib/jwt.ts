@@ -6,6 +6,7 @@ export interface JwtPayload {
   sub: string;
   role: string;
   phone: string;
+  warehouseId?: string;
 }
 
 export function signToken(payload: JwtPayload, expiresIn = "7d"): string {

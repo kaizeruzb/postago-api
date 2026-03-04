@@ -56,6 +56,7 @@ export async function verifyOtp(phone: string, code: string) {
       sub: existingUser.id,
       role: existingUser.role,
       phone: existingUser.phone,
+      warehouseId: existingUser.warehouseId ?? undefined,
     });
     return { token, user: existingUser, isNew: false };
   }
