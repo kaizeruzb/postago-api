@@ -155,6 +155,90 @@ parcelRouter.patch(
   },
 );
 
+// Operator: confirm cash payment (weighed → paid)
+parcelRouter.patch(
+  "/:id/confirm-payment",
+  requireAuth,
+  requireRole("operator", "admin"),
+  async (c) => {
+    const id = c.req.param("id");
+    const user = c.get("user");
+
+    const parcel = await db.parcel.findUnique({ where: { id } });
+    if (!parcel) return c.json({ error: "Посылка не найдена" }, 404);
+    if (parcel.status !== "weighed") {
+      return c.json({ error: "Посылка должна быть в статусе 'взвешена'" }, 400);
+    }
+
+    const updated = await db.parcel.update({
+      where: { id },
+      data: { status: "paid" },
+      include: { route: true },
+    });
+
+    await db.parcelEvent.create({
+      data: {
+        parcelId: id,
+        status: "paid",
+        operatorId: user.sub,
+        note: "Оплата подтверждена оператором (наличные/перевод)",
+      },
+    });
+
+    await db.payment.create({
+      data: {
+        parcelId: id,
+        userId: parcel.userId,
+        amount: parcel.finalCost ?? 0,
+        currency: "USD",
+        provider: "cash",
+        status: "completed",
+        paidAt: new Date(),
+      },
+    });
+
+    notifyParcelStatusChange(id, "paid").catch(console.error);
+
+    return c.json(updated);
+  },
+);
+
+// Operator: accept parcel to warehouse (paid → received_at_origin)
+parcelRouter.patch(
+  "/:id/accept",
+  requireAuth,
+  requireRole("operator", "admin"),
+  async (c) => {
+    const id = c.req.param("id");
+    const user = c.get("user");
+
+    const parcel = await db.parcel.findUnique({ where: { id } });
+    if (!parcel) return c.json({ error: "Посылка не найдена" }, 404);
+    if (parcel.status !== "paid") {
+      return c.json({ error: "Посылка должна быть оплачена" }, 400);
+    }
+
+    const updated = await db.parcel.update({
+      where: { id },
+      data: { status: "received_at_origin" },
+      include: { route: true },
+    });
+
+    await db.parcelEvent.create({
+      data: {
+        parcelId: id,
+        status: "received_at_origin",
+        operatorId: user.sub,
+        note: "Принято на склад",
+      },
+    });
+
+    notifyParcelStatusChange(id, "received_at_origin").catch(console.error);
+
+    return c.json(updated);
+  },
+);
+
 // Operator: update status
 parcelRouter.patch(
   "/:id/status",
