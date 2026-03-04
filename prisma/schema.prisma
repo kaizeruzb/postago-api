@@ -17,9 +17,9 @@ enum UserRole {
 
 enum ParcelStatus {
   created
+  weighed
   paid
   received_at_origin
-  weighed
   in_batch
   shipped
   in_transit
@@ -87,6 +87,9 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  warehouseId          String?        @map("warehouse_id") @db.Uuid
+  warehouse            Warehouse?     @relation(fields: [warehouseId], references: [id])
+
   parcels              Parcel[]
   payments             Payment[]
   operatedBatches      Batch[]        @relation("BatchOperator")
@@ -146,10 +149,12 @@ model Parcel {
   heightCm       Int?         @map("height_cm")
   calculatedCost Decimal?     @map("calculated_cost") @db.Decimal(10, 2)
   finalCost      Decimal?     @map("final_cost") @db.Decimal(10, 2)
+  warehouseId    String?      @map("warehouse_id") @db.Uuid
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
   user         User          @relation(fields: [userId], references: [id])
+  warehouse    Warehouse?    @relation(fields: [warehouseId], references: [id])
   route        Route         @relation(fields: [routeId], references: [id])
   payments     Payment[]
   photos       ParcelPhoto[]
@@ -170,14 +175,18 @@ model Batch {
   totalWeight    Decimal?    @map("total_weight") @db.Decimal(10, 3)
   totalParcels   Int         @default(0) @map("total_parcels")
   trackingNumber String?     @map("tracking_number")
-  shippedAt      DateTime?   @map("shipped_at")
-  receivedAt     DateTime?   @map("received_at")
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @updatedAt @map("updated_at")
+  shippedAt              DateTime?   @map("shipped_at")
+  receivedAt             DateTime?   @map("received_at")
+  originWarehouseId      String?     @map("origin_warehouse_id") @db.Uuid
+  destinationWarehouseId String?     @map("destination_warehouse_id") @db.Uuid
+  createdAt              DateTime    @default(now()) @map("created_at")
+  updatedAt              DateTime    @updatedAt @map("updated_at")
 
-  route        Route         @relation(fields: [routeId], references: [id])
-  operator     User          @relation("BatchOperator", fields: [operatorId], references: [id])
-  batchParcels BatchParcel[]
+  route                Route         @relation(fields: [routeId], references: [id])
+  operator             User          @relation("BatchOperator", fields: [operatorId], references: [id])
+  originWarehouse      Warehouse?    @relation("BatchOrigin", fields: [originWarehouseId], references: [id])
+  destinationWarehouse Warehouse?    @relation("BatchDest", fields: [destinationWarehouseId], references: [id])
+  batchParcels         BatchParcel[]
 
   @@index([status])
   @@map("batches")
@@ -250,6 +259,11 @@ model Warehouse {
   city    String
   address String
   type    WarehouseType
+
+  operators             User[]
+  parcels               Parcel[]
+  batchesAsOrigin       Batch[] @relation("BatchOrigin")
+  batchesAsDestination  Batch[] @relation("BatchDest")
 
   @@map("warehouses")
 }
